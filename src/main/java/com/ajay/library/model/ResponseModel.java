@@ -19,6 +19,9 @@ public void setStatus(boolean status) {
 public Object getData() {
 	return data;
 }
+public boolean getStatus() {
+	return status;
+}
 public void setData(Object data) {
 	this.data = data;
 }

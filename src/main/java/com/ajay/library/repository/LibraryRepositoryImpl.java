@@ -3,7 +3,6 @@ package com.ajay.library.repository;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -11,20 +10,28 @@ import java.util.Map;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Repository;
+
 
 import com.ajay.library.model.BookModel;
 import com.ajay.library.model.LendRequestModel;
 import com.ajay.library.model.ResponseModel;
 import com.ajay.library.model.UpdateLendModel;
+import com.ajay.library.model.UserModel;
+import com.ajay.library.model.LoginModel;
+import com.ajay.library.model.RegisterUserModel;
 
 @Repository
 public class LibraryRepositoryImpl implements LibraryRepository {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
+	
 
 	@Override
 	public ResponseModel checkBookAvailability(String bookName) {
@@ -254,5 +261,103 @@ public class LibraryRepositoryImpl implements LibraryRepository {
 
 		}
 	}
+
+	@Override
+	public ResponseModel authorizeUser(LoginModel loginModel) {
+		ResponseModel model = new ResponseModel();
+		model.setStatus(false);
+		model.setMessage("Failed");
+		try {
+		
+			String loginQuery = "SELECT username,user_type FROM tbl_login WHERE username='ajay' AND PASSWORD='password';";
+			UserModel userModel= jdbcTemplate.queryForObject(loginQuery, BeanPropertyRowMapper.newInstance(UserModel.class));
+			if(userModel!=null) {
+//				String token = new JwtTokenUtil().generateToken(loginModel);
+//				System.out.println(token);
+//				userModel.setToken(token);
+				model.setStatus(true);
+				model.setMessage("Success");
+				model.setData(userModel);
+				return model;
+			}
+			else {
+				model.setMessage("No user found");
+				return model;	
+			}
+			
+		}catch (Exception e) {
+			model.setMessage(e.toString());
+			return model;
+
+		}
+	}
+
+	@Override
+	public UserModel loadUserByUsername(String username) {
+		try {
+		
+			String loginQuery = "SELECT username,user_type,password FROM tbl_login WHERE username='"+username+"'";
+			UserModel userModel= jdbcTemplate.queryForObject(loginQuery, BeanPropertyRowMapper.newInstance(UserModel.class));
+			if(userModel!=null) {
+
+				return userModel;
+			}
+			else {
+				
+				return null;	
+			}
+			
+		}catch (Exception e) {
+			return null;
+
+		}
+	}
+
+	@Override
+	public String getUserTypeByUsername(String username) {
+		try {
+			
+			String loginQuery = "SELECT user_type FROM tbl_login WHERE username='"+username+"'";
+			String userType= jdbcTemplate.queryForObject(loginQuery, String.class);
+			if(userType!=null) {
+
+				return userType;
+			}
+			else {
+				
+				return null;	
+			}
+			
+		}catch (Exception e) {
+			return null;
+
+		}
+	}
+
+	@Override
+	public ResponseModel registerUser(RegisterUserModel userModel) {
+		ResponseModel model = new ResponseModel();
+		model.setStatus(false);
+		model.setMessage("Failed");
+		try {
+			
+			String registerUserQuery = "Insert into tbl_login ('"+userModel.getUsername()+"','"+userModel.getPassword()+"','"+userModel.getUserType()+"')";
+			int result = jdbcTemplate.update(registerUserQuery);
+			if(result != 0) {
+				model.setStatus(true);
+				model.setMessage("Success");
+				model.setData(result);
+				return model;
+			}
+			
+		}catch (Exception e) {
+			model.setMessage(e.toString());
+			return model;
+
+		}
+		return null;
+	}
+
+
 
 }
